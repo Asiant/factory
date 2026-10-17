@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="640" viewBox="0 0 980 640" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="980" height="640" fill="#f7f8fa"/>
+  <text x="490" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#17263b">Mission-Driven Agent Harness — 5 Layers</text>
+  <!-- Layer boxes -->
+  <g>
+    <rect x="70" y="60" width="840" height="84" rx="10" fill="#dceeff" stroke="#3b82c4" stroke-width="2"/>
+    <text x="90" y="88" font-size="17" font-weight="bold" fill="#17365d">1 · EXPERIENCE — where people stand</text>
+    <text x="90" y="113" font-size="14" fill="#24425f">Mission Map  ·  Gate Inbox  ·  Change Lens  ·  Context Inspector  ·  Reports</text>
+    <text x="90" y="133" font-size="13" fill="#4b6576">People inspect, approve, request changes. They never operate machinery directly.</text>
+  </g>
+  <path d="M490 144 V164" stroke="#52616e" stroke-width="2" marker-end="url(#a)"/>
+  <g>
+    <rect x="70" y="166" width="840" height="84" rx="10" fill="#e3f2df" stroke="#4d9b47" stroke-width="2"/>
+    <text x="90" y="194" font-size="17" font-weight="bold" fill="#28551f">2 · MISSION CONTROL — the floor manager</text>
+    <text x="90" y="219" font-size="14" fill="#315331">Mission lifecycle · stage order · durable gates · timers · escalation</text>
+    <text x="90" y="239" font-size="13" fill="#557055">Remembers where every mission is; pauses free while humans decide; resumes exactly there.</text>
+  </g>
+  <path d="M490 250 V270" stroke="#52616e" stroke-width="2" marker-end="url(#a)"/>
+  <!-- engines -->
+  <g>
+    <rect x="70" y="272" width="265" height="110" rx="10" fill="#fff1cc" stroke="#d4a017" stroke-width="2"/>
+    <text x="202" y="299" text-anchor="middle" font-size="16" font-weight="bold" fill="#6c5110">AGENT HARNESS</text>
+    <text x="202" y="324" text-anchor="middle" font-size="13">runs agents safely</text>
+    <text x="202" y="345" text-anchor="middle" font-size="13">sandbox · tools · budgets</text>
+    <text x="202" y="366" text-anchor="middle" font-size="13">proposes only</text>
+  </g>
+  <g>
+    <rect x="357" y="272" width="265" height="110" rx="10" fill="#ffe4d6" stroke="#d2691e" stroke-width="2"/>
+    <text x="490" y="299" text-anchor="middle" font-size="16" font-weight="bold" fill="#74340a">CLM CONTEXT</text>
+    <text x="490" y="324" text-anchor="middle" font-size="13">prepares what agents see</text>
+    <text x="490" y="345" text-anchor="middle" font-size="13">context-as-file · snapshots</text>
+    <text x="490" y="366" text-anchor="middle" font-size="13">signed truth stays read-only</text>
+  </g>
+  <g>
+    <rect x="644" y="272" width="266" height="110" rx="10" fill="#f3dcff" stroke="#8e44ad" stroke-width="2"/>
+    <text x="777" y="299" text-anchor="middle" font-size="16" font-weight="bold" fill="#54206b">VERIFICATION</text>
+    <text x="777" y="324" text-anchor="middle" font-size="13">machine AI-checks</text>
+    <text x="777" y="345" text-anchor="middle" font-size="13">schema · coverage · tests</text>
+    <text x="777" y="366" text-anchor="middle" font-size="13">checks only — never approves</text>
+  </g>
+  <text x="490" y="402" text-anchor="middle" font-size="13" fill="#4b5563">3 · THE THREE ENGINES — machines that propose &amp; check</text>
+  <path d="M490 410 V430" stroke="#52616e" stroke-width="2" marker-end="url(#a)"/>
+  <g>
+    <rect x="70" y="432" width="840" height="84" rx="10" fill="#ffe1e1" stroke="#c0392b" stroke-width="2"/>
+    <text x="90" y="460" font-size="17" font-weight="bold" fill="#6e1f16">4 · ARTIFACT GRAPH — the single truth</text>
+    <text x="90" y="485" font-size="14" fill="#662b24">Mission → FS/NFS → HLD → KDD/ADR → Units → LLD → Code → Tests (nested graph, doc 10)</text>
+    <text x="90" y="505" font-size="13" fill="#7a4a44">Sourced from Jira · Confluence · Git. Mission ledger lives in Git only.</text>
+  </g>
+  <path d="M490 516 V536" stroke="#52616e" stroke-width="2" marker-end="url(#a)"/>
+  <g>
+    <rect x="70" y="538" width="840" height="70" rx="10" fill="#e2e3e5" stroke="#6c757d" stroke-width="2"/>
+    <text x="90" y="565" font-size="17" font-weight="bold" fill="#343a40">5 · TELEMETRY &amp; REPORTING — the meters</text>
+    <text x="90" y="590" font-size="14" fill="#444">Every run, gate, cost &amp; outcome logged → leverage · delivery · quality reports. Observes, never controls.</text>
+  </g>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#52616e"/></marker></defs>
+</svg>
