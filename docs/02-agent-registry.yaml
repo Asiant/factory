@@ -1,0 +1,116 @@
+# Persona-Agent & Skill Registry — v2 (restructured 2026-10-17)
+# MODEL: few PERSONA-AGENTS (mirroring human roles, persistent identity,
+# own context partition, permission ceiling) x many SKILLS (granular,
+# contracted capabilities) applied CASE-BY-CASE.
+# A skill run = one persona executing one skill on one case (mission/unit).
+# No persona may approve a gate. No skill runs unless registered here.
+
+registry_version: 2
+
+# ---------------------------------------------------------------- personas
+personas:
+  - id: product-agent
+    mirrors_role: "Product Owner / Product Lead"
+    mission: "Own the 'what & why': problem, value, functional intent"
+    context_partition: product        # CLM SEG-C partition (doc 05)
+    permission_ceiling: [read_graph, write_draft_artifacts, run_elicitation]
+    never: [approve_gate, write_code, deploy]
+    default_skills: [mission-intake, fs-elaboration, value-slicing]
+
+  - id: architect-agent
+    mirrors_role: "Lead / Solution Architect"
+    mission: "Own the 'how at system level': design, decisions, integrity"
+    context_partition: architecture
+    permission_ceiling: [read_graph, read_code_graph, write_draft_artifacts, render_diagrams]
+    never: [approve_gate, merge, deploy]
+    default_skills: [hld-design, nfs-design, kdd-recording, adr-drafting, design-review]
+
+  - id: engineering-agent
+    mirrors_role: "Software Engineer / Tech Lead"
+    mission: "Own construction: decomposition, LLD, code, fixes"
+    context_partition: engineering
+    permission_ceiling: [read_graph, read_code_graph, write_branch, run_tests]
+    never: [approve_gate, merge, deploy, edit_signed_artifacts]
+    default_skills: [technical-decomposition, lld-design, implementation, code-fix, low-level-adr]
+
+  - id: quality-agent
+    mirrors_role: "QA / Quality Engineer"
+    mission: "Own evidence: test design, verification, quality signals"
+    context_partition: quality
+    permission_ceiling: [read_graph, read_code_graph, run_tests, run_verification]
+    never: [approve_gate, write_code, merge]   # independence: verifies, never authors the change it verifies
+    default_skills: [test-design, verification, nfs-evidence, defect-analysis]
+
+  - id: delivery-agent
+    mirrors_role: "Delivery Lead / Release Manager / SRE counterpart"
+    mission: "Own path to production and operations feedback"
+    context_partition: delivery
+    permission_ceiling: [read_graph, read_telemetry, write_draft_artifacts]
+    never: [approve_gate, deploy_without_gate]
+    default_skills: [release-planning, rollout-monitoring, incident-drafting]
+
+  - id: knowledge-agent
+    mirrors_role: "Knowledge Manager / Team Librarian"
+    mission: "Own memory: summaries, context curation, reporting, explainability"
+    context_partition: knowledge
+    permission_ceiling: [read_graph, propose_context_changes, read_ledgers]
+    never: [approve_gate, edit_signed_artifacts, write_code]
+    default_skills: [change-explaining, reporting, context-curation, summary-maintenance]
+
+# ----------------------------------------------------------------- skills
+# Each skill keeps the full contract discipline: typed I/O, AI-checks,
+# human gate that follows, eligible personas, budget, eval suite, playbook.
+# Skills are applied CASE-BY-CASE: Mission Control composes a skill plan
+# per mission from risk tier, mission type and stage (see skill_plans).
+
+skills:
+  - {id: mission-intake, personas: [product-agent], inputs: [raw_request], outputs: [mission], ai_checks: [completeness_lint, duplicate_search, value_hypothesis_present], human_gate: G0, autonomy: L1, budget: {max_tokens: 40000, max_wall_min: 15}, eval_suite: evals/skills/mission-intake, human_playbook: playbooks/mission-intake.md}
+  - {id: fs-elaboration, personas: [product-agent], inputs: [mission@G0], outputs: [fs-nfs, questions], ai_checks: [every_fs_testable, nfs_quantified, glossary_consistent], human_gate: G1, autonomy: L1, budget: {max_tokens: 120000, max_wall_min: 60}, eval_suite: evals/skills/fs-elaboration, human_playbook: playbooks/fs-nfs.md}
+  - {id: value-slicing, personas: [product-agent, architect-agent], inputs: [hld@G2, adrs@G4], outputs: [units, verification_command_proposal], ai_checks: [every_fs_covered, independent_value, dag_acyclic, size_budget], human_gate: G5, autonomy: L1, budget: {max_tokens: 100000, max_wall_min: 45}, eval_suite: evals/skills/value-slicing, human_playbook: playbooks/decomposition.md}
+  - {id: hld-design, personas: [architect-agent], inputs: [fs-nfs@G1], outputs: [hld], ai_checks: [coverage_100pct, diagram_renders, failure_modes, capacity_assumptions], human_gate: G2, autonomy: L1, budget: {max_tokens: 120000, max_wall_min: 60}, eval_suite: evals/skills/hld-design, human_playbook: playbooks/hld.md}
+  - {id: nfs-design, personas: [architect-agent, quality-agent], inputs: [fs-nfs@G1], outputs: [hld_nfs_sections, nfs_evidence_plan], ai_checks: [every_nfs_has_design_response, every_nfs_has_measure], human_gate: G2, autonomy: L1, budget: {max_tokens: 80000, max_wall_min: 45}, eval_suite: evals/skills/nfs-design, human_playbook: playbooks/nfs.md}
+  - {id: kdd-recording, personas: [architect-agent, product-agent], inputs: [hld, session_notes], outputs: [kdds], ai_checks: [options_ge_2_or_justified, linked, consequences], human_gate: G3, autonomy: L1, budget: {max_tokens: 60000, max_wall_min: 30}, eval_suite: evals/skills/kdd-recording, human_playbook: playbooks/kdd.md}
+  - {id: adr-drafting, personas: [architect-agent, engineering-agent], inputs: [hld@G2, kdds@G3], outputs: [adrs], ai_checks: [adr_schema, conflict_scan, supersedure_links], human_gate: G4, autonomy: L1, budget: {max_tokens: 80000, max_wall_min: 45}, eval_suite: evals/skills/adr-drafting, human_playbook: playbooks/adr.md}
+  - {id: design-review, personas: [architect-agent, quality-agent], inputs: [hld|lld], outputs: [review_findings], ai_checks: [findings_cite_graph_nodes], human_gate: none, autonomy: L2, budget: {max_tokens: 60000, max_wall_min: 30}, eval_suite: evals/skills/design-review, human_playbook: playbooks/review.md}
+  - {id: technical-decomposition, personas: [engineering-agent, architect-agent], inputs: [units@G5, hld], outputs: [unit_technical_tasks], ai_checks: [tasks_cover_acceptance, estimates_present], human_gate: none, autonomy: L2, budget: {max_tokens: 60000, max_wall_min: 30}, eval_suite: evals/skills/technical-decomposition, human_playbook: playbooks/decomposition.md}
+  - {id: lld-design, personas: [engineering-agent], inputs: [unit@G5, hld], outputs: [lld, low_level_adrs], ai_checks: [lld_hld_conformance, contract_tests_derivable, adr_conflicts], human_gate: G6, autonomy: L1, budget: {max_tokens: 100000, max_wall_min: 45}, eval_suite: evals/skills/lld-design, human_playbook: playbooks/lld.md}
+  - {id: low-level-adr, personas: [engineering-agent, architect-agent], inputs: [lld], outputs: [adrs], ai_checks: [adr_schema, conflict_scan], human_gate: G6, autonomy: L1, budget: {max_tokens: 40000, max_wall_min: 20}, eval_suite: evals/skills/low-level-adr, human_playbook: playbooks/adr.md}
+  - {id: implementation, personas: [engineering-agent], inputs: [lld@G6], outputs: [pull_request, build_log], ai_checks: [build_green, tests_green, lint, sast, coverage_delta, no_secrets, pr_size_budget], human_gate: G7, autonomy: L2, budget: {max_tokens: 200000, max_wall_min: 120}, eval_suite: evals/skills/implementation, human_playbook: playbooks/development.md, hard_rules: [never_merges]}
+  - {id: code-fix, personas: [engineering-agent], inputs: [review_comments|defect], outputs: [pull_request_update], ai_checks: [tests_green, comments_addressed], human_gate: G7, autonomy: L2, budget: {max_tokens: 100000, max_wall_min: 60}, eval_suite: evals/skills/code-fix, human_playbook: playbooks/development.md, hard_rules: [never_merges]}
+  - {id: test-design, personas: [quality-agent, engineering-agent], inputs: [fs-nfs, unit], outputs: [test_plan, test_cases], ai_checks: [every_acceptance_criterion_has_test], human_gate: none, autonomy: L1, budget: {max_tokens: 80000, max_wall_min: 45}, eval_suite: evals/skills/test-design, human_playbook: playbooks/testing.md}
+  - {id: verification, personas: [quality-agent], inputs: [pull_request, verification_command@G5], outputs: [verification_report], ai_checks: [command_green, e2e_green, evidence_attached, flaky_quarantined], human_gate: none, autonomy: L2, budget: {max_tokens: 40000, max_wall_min: 60}, eval_suite: evals/skills/verification, human_playbook: playbooks/verification.md}
+  - {id: nfs-evidence, personas: [quality-agent], inputs: [nfs_items, system_under_test], outputs: [nfs_evidence_report], ai_checks: [measured_not_asserted], human_gate: none, autonomy: L2, budget: {max_tokens: 60000, max_wall_min: 90}, eval_suite: evals/skills/nfs-evidence, human_playbook: playbooks/nfs-evidence.md}
+  - {id: defect-analysis, personas: [quality-agent, engineering-agent], inputs: [defect|incident], outputs: [root_cause_proposal], ai_checks: [cites_graph_nodes_and_logs], human_gate: none, autonomy: L1, budget: {max_tokens: 60000, max_wall_min: 45}, eval_suite: evals/skills/defect-analysis, human_playbook: playbooks/defects.md}
+  - {id: release-planning, personas: [delivery-agent], inputs: [verification_reports, units], outputs: [release_plan], ai_checks: [env_parity, rollback_rehearsed, flags_wired, comms_complete], human_gate: G8, autonomy: L1, budget: {max_tokens: 60000, max_wall_min: 30}, eval_suite: evals/skills/release-planning, human_playbook: playbooks/release.md}
+  - {id: rollout-monitoring, personas: [delivery-agent, quality-agent], inputs: [release, telemetry], outputs: [rollout_report], ai_checks: [slo_evidence_attached], human_gate: none, autonomy: L2, budget: {max_tokens: 40000, max_wall_min: 60}, eval_suite: evals/skills/rollout-monitoring, human_playbook: playbooks/rollout.md}
+  - {id: incident-drafting, personas: [delivery-agent], inputs: [alert, telemetry], outputs: [incident_draft], ai_checks: [evidence_linked_to_release], human_gate: none, autonomy: L1, budget: {max_tokens: 40000, max_wall_min: 20}, eval_suite: evals/skills/incident-drafting, human_playbook: playbooks/incidents.md}
+  - {id: change-explaining, personas: [knowledge-agent], inputs: [artifact_diff, artifact_graph], outputs: [change_narrative], ai_checks: [claims_cite_real_nodes], human_gate: none, autonomy: L2, budget: {max_tokens: 60000, max_wall_min: 20}, eval_suite: evals/skills/change-explaining, human_playbook: playbooks/review.md}
+  - {id: reporting, personas: [knowledge-agent], inputs: [event_log, cost_ledger, metrics_definitions], outputs: [reports], ai_checks: [definitions_pinned, lineage_present, no_vanity_headlines], human_gate: G10, autonomy: L2, budget: {max_tokens: 60000, max_wall_min: 30}, eval_suite: evals/skills/reporting, human_playbook: playbooks/reporting.md}
+  - {id: context-curation, personas: [knowledge-agent], inputs: [merged_artifacts, retrospectives], outputs: [context_change_proposals], ai_checks: [contradiction_scan, stale_detection], human_gate: G9, autonomy: L1, budget: {max_tokens: 80000, max_wall_min: 45}, eval_suite: evals/skills/context-curation, human_playbook: playbooks/context-curation.md}
+  - {id: summary-maintenance, personas: [knowledge-agent], inputs: [changed_graph_nodes], outputs: [summary_updates], ai_checks: [summary_matches_source_hash], human_gate: none, autonomy: L2, budget: {max_tokens: 40000, max_wall_min: 20}, eval_suite: evals/skills/summary-maintenance, human_playbook: playbooks/summaries.md}
+
+# ------------------------------------------------------- case-based plans
+# FIXED TEMPLATES ONLY (author decision 2026-10-17): skill chains are
+# pre-approved templates selected by mission type. Mission Control does NOT
+# compose per-mission plans. Any deviation from the selected template
+# (skip/add a skill) requires human approval recorded at the stage gate.
+# Templates:
+skill_plans:
+  new-feature-standard:
+    - {stage: intake,        skill: mission-intake,          persona: product-agent}
+    - {stage: elaboration,   skill: fs-elaboration,          persona: product-agent}
+    - {stage: design,        skill: hld-design,              persona: architect-agent}
+    - {stage: design,        skill: nfs-design,              persona: architect-agent}
+    - {stage: decisions,     skill: kdd-recording,           persona: architect-agent}
+    - {stage: decisions,     skill: adr-drafting,            persona: architect-agent}
+    - {stage: decomposition, skill: value-slicing,           persona: product-agent}
+    - {stage: per-unit,      skill: lld-design,              persona: engineering-agent}
+    - {stage: per-unit,      skill: test-design,             persona: quality-agent}
+    - {stage: per-unit,      skill: implementation,          persona: engineering-agent}
+    - {stage: per-unit,      skill: verification,            persona: quality-agent}
+    - {stage: release,       skill: release-planning,       persona: delivery-agent}
+  bugfix-fast:   # case-based: skips HLD/KDD unless risk demands escalation
+    - {stage: intake,        skill: mission-intake,          persona: product-agent}
+    - {stage: analysis,      skill: defect-analysis,         persona: quality-agent}
+    - {stage: fix,           skill: code-fix,                persona: engineering-agent}
+    - {stage: verify,        skill: verification,            persona: quality-agent}

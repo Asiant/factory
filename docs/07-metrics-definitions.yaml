@@ -1,0 +1,72 @@
+# Metric definitions — v1 (versioned; dashboards must pin a version)
+# Rule: leverage, delivery and quality are always reported together. No single-number headlines.
+definitions_version: 1
+
+leverage:
+  - id: gate_first_pass_rate
+    def: "proposals passing a gate with no request_changes / total proposals, per agent+stage, rolling 30d"
+    source: gate_records
+  - id: rework_cycles
+    def: "median request_changes rounds per accepted artifact, per stage"
+    source: gate_records
+  - id: human_touch_minutes
+    def: "approver+reviewer minutes per gate (event timestamps, sampled validation)"
+    source: gate_records + review_events
+  - id: stage_cycle_time_delta
+    def: "DISABLED until a baseline exists (D9: no manual baseline in v1). Report stage cycle times descriptively; enable delta only when a comparison cohort is declared in a future definitions version."
+    source: mission_events
+  - id: trend_vs_past_reports
+    def: "D9: every metric above is also reported as trend vs archived past reports (same definitions_version) once >=2 prior periods exist; reports are immutable once published"
+    source: report_archive
+  - id: autonomy_yield
+    def: "% L2/L3 steps completing without escalation AND without a defect attributed within 30d"
+    source: run_events + defect_links
+  - id: cost_per_accepted_artifact
+    def: "(model tokens + tool + infra cost) / accepted artifacts, per stage; also per shipped unit"
+    source: cost_ledger + gate_records
+  - id: context_efficiency
+    def: "CLM: context edits/run, snapshot token size trend, FLOPs vs append-only baseline (doc 05 §5.3)"
+    source: context_events
+
+delivery:   # DORA-aligned
+  - id: change_lead_time
+    def: "commit -> production, median + p85"
+    source: ci_cd_events
+  - id: deployment_frequency
+    def: "production deployments / week / service"
+    source: ci_cd_events
+  - id: change_failure_rate
+    def: "% deployments causing incident, rollback or hotfix within 7d"
+    source: incident_links
+  - id: recovery_time
+    def: "failed deployment -> restored, median"
+    source: incident_links
+  - id: mission_lead_time
+    def: "G0 -> value-in-production (G8 + success metric live), median per risk tier"
+    source: mission_events
+  - id: gate_wait_time
+    def: "time missions spend parked at each gate (visibility, not blame)"
+    source: gate_records
+
+quality:
+  - id: escaped_defect_rate
+    def: "production defects linked to mission units / shipped unit, 30d + 90d windows"
+    source: defect_links
+  - id: verification_coverage
+    def: "% FS with passing acceptance evidence; % NFS with measured evidence (not assertions)"
+    source: verification_reports
+  - id: traceability_completeness
+    def: "% FS covered by >=1 unit, % units with tests, % releases with rollback evidence"
+    source: artifact_graph
+  - id: review_burden
+    def: "PR size + reviewer minutes per merged PR (guardrail vs AI PR-volume inflation)"
+    source: code_host_events
+  - id: eval_regression
+    def: "per-agent golden-suite pass rate; any drop blocks agent version promotion"
+    source: eval_runs
+  - id: mttr_and_slo
+    def: "service MTTR + error-budget burn for mission-affected services"
+    source: observability
+
+banned_as_headlines: [lines_of_code, pr_count, tokens_used, agent_messages_sent]
+  # may appear as diagnostics only, never as success measures
