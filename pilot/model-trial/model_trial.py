@@ -102,11 +102,23 @@ def _http_request(method: str, url: str, headers: dict, body: dict | None, timeo
         return None, {}, "", latency, f"{type(exc).__name__}: {exc}"
 
 
-def _classify_attempt(status: int | None, error: str | None) -> str:
+def _classify_attempt(status: int | None, error: str | None, body: str = "", kind: str = "generic") -> str:
     if error is not None:
         return "network-error"
     if status in (401, 403):
         return "auth-rejected"
+    if status == 200 and kind in ("catalog", "chat"):
+        # 200 alone is not a trial: the body must be a JSON payload of the
+        # expected shape (trial-002 found a stub `200 "OK"` front door).
+        try:
+            parsed = json.loads(body)
+        except Exception:  # noqa: BLE001
+            return "invalid-response"
+        if not isinstance(parsed, dict):
+            return "invalid-response"
+        if kind == "chat" and not parsed.get("choices"):
+            return "invalid-response"
+        return "ok"
     if status == 200:
         return "ok"
     return "http-error"
@@ -152,7 +164,7 @@ def _run_probe(sources: list[dict], budget: dict, mock: bool) -> dict:
                 if len(attempts) >= caps["max_model_calls"]:
                     break
                 status, _hdrs, body, latency, error = _http_request("GET", cfg["base"] + path, headers, None)
-                outcome = _classify_attempt(status, error)
+                outcome = _classify_attempt(status, error, body, kind="catalog")
                 attempts.append({
                     "endpoint": cfg["host"], "role": cfg["role"], "op": f"catalog GET {path}",
                     "outcome": outcome, "status": status, "latency_ms": latency,
@@ -183,7 +195,7 @@ def _run_probe(sources: list[dict], budget: dict, mock: bool) -> dict:
                     "max_tokens": 16, "temperature": 0, "stream": False,
                 },
             )
-            outcome = _classify_attempt(status, error)
+            outcome = _classify_attempt(status, error, body, kind="chat")
             attempts.append({
                 "endpoint": cfg["host"], "role": cfg["role"], "op": f"chat POST {cfg['chat_path']}",
                 "outcome": outcome, "status": status, "latency_ms": latency,

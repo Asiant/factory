@@ -32,20 +32,22 @@ jobs:
         run: python3 -m pip install --user pyyaml
       - name: Run model trial (probe, no secrets beyond github.token)
         env:
-          MODEL_API_TOKEN: ${{ github.token }}
+          FACTORY_MODEL_API_TOKEN: ${{ github.token }}
+          TRIAL_ID: trial-003
         run: >-
           python3 pilot/model-trial/model_trial.py
-          --trial-id trial-002
+          --trial-id "$TRIAL_ID"
           --runner ci
           --endpoints copilot,models
-          --notes "GitHub-hosted runner probe: reachability + auth behaviour of the model endpoints under the model_trial envelope."
+          --notes "GitHub-hosted runner probe: reachability + auth behaviour of the model endpoints under the model_trial envelope. trial-002 found an env-name mismatch (no Authorization header sent) and a stub 200 OK front door; this run sends the header and validates response shape."
       - name: Publish record as check run
         env:
           GH_TOKEN: ${{ github.token }}
+          TRIAL_ID: trial-003
         run: |
           python3 - <<'EOF'
           import json, os, pathlib, urllib.request
-          record = pathlib.Path("pilot/model-trial/trials/trial-002-ci.yaml").read_text()
+          record = pathlib.Path(f"pilot/model-trial/trials/{os.environ['TRIAL_ID']}-ci.yaml").read_text()
           payload = {
               "name": "model-trial",
               "head_sha": os.environ["GITHUB_SHA"],

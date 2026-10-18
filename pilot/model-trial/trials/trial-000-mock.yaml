@@ -2,7 +2,7 @@
 trial:
   id: trial-000
   runner: mock
-  ts_utc: '2026-10-18T06:24:14Z'
+  ts_utc: '2026-10-18T06:44:06Z'
   harness: pilot/model-trial/model_trial.py
   harness_version: 1
   objective: 'First model trial: reachability + auth + one completion under the model_trial
@@ -25,7 +25,7 @@ budget:
 prompt: 'Reply with exactly: FACTORY-MODEL-TRIAL-OK'
 endpoints_requested:
 - copilot
-notes: Harness self-test under the model_trial envelope; no network.
+notes: Harness self-test after response-shape validation.
 attempts:
 - endpoint: mock
   op: mock chat
