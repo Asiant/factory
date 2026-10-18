@@ -1,0 +1,41 @@
+# First model trial from a host that can reach the Copilot model endpoints
+# (discovery item 6; doc 12a alternative when the sandbox egress allowlist
+# does not include them yet). Runs the same harness as the sandbox trial and
+# uploads the redacted record as an artifact. No credentials are stored in the
+# repo: the probe uses the run-scoped GITHUB_TOKEN only, so an auth_rejected
+# verdict here is expected until the org secret store provides a
+# Copilot-capable key (FACTORY_MODEL_API_TOKEN).
+name: model-trial
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/**"]
+    paths:
+      - "pilot/model-trial/**"
+      - "pilot/sandbox/**"
+      - ".github/workflows/model-trial.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install harness deps
+        run: python3 -m pip install --user pyyaml
+      - name: Run model trial (probe, no secrets beyond github.token)
+        env:
+          MODEL_API_TOKEN: ${{ github.token }}
+        run: >-
+          python3 pilot/model-trial/model_trial.py
+          --trial-id trial-002
+          --runner ci
+          --endpoints copilot,models
+          --notes "GitHub-hosted runner probe: reachability + auth behaviour of the model endpoints under the model_trial envelope."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: model-trial-record
+          path: pilot/model-trial/trials/

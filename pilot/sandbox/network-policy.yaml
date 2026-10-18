@@ -1,0 +1,92 @@
+# Skill container network policy — pilot test setup (doc 12 §5 item 8, item 4).
+#
+# Applies to: the containers in which persona skills execute code (doc 12 §1
+# decision "Skill execution: Containers"). Default-deny egress; only the hosts
+# below are reachable, on 443 (TLS) unless stated. DNS resolution is allowed
+# for allowlisted hosts only.
+#
+# Status: PILOT TEST SETUP. Gate human / owner for this file: @Asiant (per the
+# test CODEOWNERS). The real project replaces this with the named platform
+# owner. Changing this file is a reviewed config change (G9-class) — a skill
+# may never edit its own network policy.
+#
+# Enforcement note (2026-10-18): this file is the source of truth for the
+# skill container / CI runner egress rules. The Arena discovery sandbox that
+# doubles as today's skill runtime enforces its own platform allowlist; the
+# model hosts below were added here first and the platform allowlist must be
+# synced to match (evidence: pilot/model-trial/trials/).
+
+policy: skill-container-network
+version: 1
+default: deny-egress
+
+hosts:
+  # --- code + package infrastructure (already required by build order B1-B8) ---
+  - host: github.com
+    class: code-host
+    ports: [443, 22]
+    purpose: git clone/fetch/push for pilot repo + ledger repo, GitHub adapter API surface, PR/check workflows
+  - host: codeload.github.com
+    class: code-host
+    ports: [443]
+    purpose: GitHub tarball/archive downloads
+  - host: api.github.com
+    class: code-host
+    ports: [443]
+    purpose: GitHub REST/GraphQL adapter (issues, PRs, checks, webhooks delivery)
+  - host: registry.npmjs.org
+    class: package-registry
+    ports: [443]
+    purpose: npm dependency installs inside skill containers
+  - host: pypi.org
+    class: package-registry
+    ports: [443]
+    purpose: PyPI index for skill container dependency installs
+  - host: files.pythonhosted.org
+    class: package-registry
+    ports: [443]
+    purpose: PyPI artifact downloads (sdists/wheels)
+
+  # --- model endpoints (added 2026-10-18, discovery item 4 / item 6) ---
+  # Decision (item 4): allow BOTH GitHub model endpoints; primary = Copilot
+  # API (`api.githubcopilot.com`) because the recorded model choice is
+  # "GitHub Copilot-provided models"; fallback = GitHub Models catalog
+  # (`models.github.ai`). Both are reached with a GitHub credential from the
+  # org secret store (see pilot/sandbox/budget-policy.yaml for the key rule).
+  - host: api.githubcopilot.com
+    class: model-endpoint
+    role: primary
+    ports: [443]
+    purpose: Copilot-provided models — chat completions + model catalog for emulated CLM (doc 05 §6) and skill runs
+    since: 2026-10-18
+  - host: models.github.ai
+    class: model-endpoint
+    role: fallback
+    ports: [443]
+    purpose: GitHub Models catalog/inference fallback if the Copilot API is unavailable for a run
+    since: 2026-10-18
+
+  # --- added when those systems exist (discovery items 2, 3, 5) ---
+  # - host: <jira-host>       class: saas-adapter  purpose: Jira issues/transitions/webhooks
+  # - host: <confluence-host> class: saas-adapter  purpose: Confluence page CRUD/version/hash
+  # - host: <idp-host>        class: identity       purpose: SSO/OIDC for the own UI + approver identity
+
+tools:
+  # Tool allowlist inside skill containers (doc 10 §3: structured graph tools
+  # are the agent read path; raw file/search is fallback + logged).
+  allow:
+    - graph-tools        # get_overview/get_node/find_nodes/get_neighbours/find_references/trace/impact_preview/get_context_for_task (doc 10 §3)
+    - git                # via code-host hosts only
+    - http-client        # egress restricted to the hosts above
+    - package-install    # npm/pypi registries above, no arbitrary indexes
+    - model-call         # model-endpoint hosts above; every call counted against the run budget
+  deny:
+    - docker-socket
+    - raw-egress-to-non-allowlisted-hosts
+    - editing-own-policy-or-budget-files
+    - secret-egress      # keys from the secret store never leave the container (no logging, no sends)
+
+runtime:
+  execution: container   # discovery item 8 decision
+  image: TBD             # to be pinned before B5 (skills runtime); CI runner image acceptable for spikes
+  network_policy: this-file

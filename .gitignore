@@ -1,0 +1,7 @@
+# Tooling
+.venv/
+__pycache__/
+*.pyc
+
+# Spike working output (verdicts live in docs/spikes/)
+spikes/**/out/

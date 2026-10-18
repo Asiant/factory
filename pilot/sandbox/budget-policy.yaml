@@ -1,0 +1,83 @@
+# Per-run budget envelope — pilot test setup (doc 12 §5 item 6 "per-run budget
+# limits"; recorded as still-open item 5 in docs/12a-discovery-status.md).
+#
+# Scope: every skill run and emulated-CLM run inside the skill containers
+# (doc 02 contracts, doc 05 §6 emulation), plus model-access trials. A "run"
+# is one skill invocation end-to-end: all model calls, CLM context re-sends,
+# retries and tool calls aggregate against ONE envelope — per-call limits are
+# not a loophole.
+#
+# Status: PILOT TEST SETUP. Owner: @Asiant (test CODEOWNERS). Changing this
+# file is a reviewed config change (G9-class). Keys live in the org secret
+# store only — never in the repo, chat or logs (injected at run time as
+# FACTORY_MODEL_API_TOKEN).
+
+policy: per-run-budget
+version: 1
+currency: usd
+
+principles:
+  - per-run, not per-call: tokens, cost, wall time and model calls aggregate across the whole run (doc 01 §4.1 budget field)
+  - per-skill ceilings in docs/02-agent-registry.yaml bind in addition: max_tokens and max_wall_min per run = MIN(skill contract, envelope below)
+  - hard stop parks the run (doc 05 circuit-breaker) and escalates to the human gate — never silent scope reduction, never auto-approval
+  - degraded mode per doc 01: budget exhausted ⇒ pause & notify, artifacts stay as-is
+
+pricing:
+  # Notional ledger pricing. Pilot models are Copilot-provided
+  # (subscription-included: no per-token invoice), but every run still records
+  # notional USD so doc 07 cost metrics stay comparable across models and a
+  # later switch to an api-metered model changes nothing but the rate card.
+  billing_modes: [subscription-included, api-metered]
+  pilot_billing_mode: subscription-included
+  notional_rates_usd_per_mtok: {input: 2.50, output: 10.00}
+  rate_card_note: >-
+    Frontier-class placeholder rates, versioned with this file (policy version
+    bump to change). S2 compares measured cost/run against the append-only
+    baseline under these same rates.
+
+envelopes:
+  # Default for skill runs. max_tokens/max_cost_usd/max_wall_min match the
+  # doc 01 §4.1 example contract (120k / 4 USD / 30 min).
+  default_run:
+    max_tokens: 120000
+    max_cost_usd: 4.00
+    max_wall_min: 30
+    max_model_calls: 24
+  # Implementation-class skills (doc 02 implementation/code-fix token ceilings).
+  heavy_run:
+    max_tokens: 200000
+    max_cost_usd: 8.00
+    max_wall_min: 120
+    max_model_calls: 40
+  # Emulated CLM runs re-send the context file per call (doc 05 §6); S2
+  # measures real economy against this envelope.
+  clm_emulated_run:
+    max_tokens: 180000
+    max_cost_usd: 6.00
+    max_wall_min: 60
+    max_model_calls: 48
+  # Model-access discovery trials (smoke prompt, catalog probe). Envelope is
+  # deliberately tiny: a trial that needs more is not a trial.
+  model_trial:
+    max_tokens: 2000
+    max_cost_usd: 0.10
+    max_wall_min: 5
+    max_model_calls: 8
+
+enforcement:
+  pre_run:
+    - envelope resolved from skill contract + this policy; run rejected if the skill exceeds any ceiling on paper
+    - token source FACTORY_MODEL_API_TOKEN present (from org secret store) before any model call
+  in_run:
+    soft_pct: 80   # warning: run is marked over-budget-risk in the cost ledger
+    hard_pct: 100  # circuit-breaker: park run, keep artifacts, escalate to the human gate
+    retry_policy: retries count against the same run
+    tool_calls: every model-call tool invocation counts toward max_model_calls
+  post_run:
+    - cost-ledger record: {run_id, skill, model, tokens_in, tokens_out, cost_usd_notional, envelope, within_budget}
+    - budget breaches are events in the audit log (doc 08), never silent
+
+binding:
+  skill_contract_budget: docs/02-agent-registry.yaml (budget field per skill)
+  clm_controls: docs/05-clm-design.md (per-segment token budgets, circuit-breaker)
+  network_policy: pilot/sandbox/network-policy.yaml
