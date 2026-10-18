@@ -30,4 +30,12 @@ Q&A, bind the blueprint in this folder.
 - ✅ Q-OPEN-1 → D5 (Jira/Confluence/Git + own UI) · ✅ Q-OPEN-2 → D6 (emulated CLM) · ✅ Q-OPEN-3 → D7 (QnA-seeded) · ✅ Q-OPEN-4 → D8 (deferred, accepted risk) · ✅ Q-OPEN-5 → D9 (no baseline; trends vs past reports)
 - Still open (non-blocking for skeleton): exact Jira project/issue-type mapping & Confluence space/template mapping (discovery task in implementation plan, doc 09 §4); Git host specifics (GitHub/GitLab/Bitbucket — adapter is host-agnostic, webhook dialects differ); IdP for sign-off identity (assumed SSO/OIDC in org UI — confirm at skeleton kickoff).
 
+## Round 3 decisions — walking-skeleton discovery & spikes (2026-10-18)
+
+| # | Question | Decision | Implication |
+|---|---|---|---|
+| D10 | Skill container egress / model endpoint (discovery items 4, 8) | Allowlist **both** GitHub model endpoints in the skill container network policy: primary `api.githubcopilot.com` (matches the "Copilot-provided models" choice), fallback `models.github.ai`; deny-by-default otherwise. File: `pilot/sandbox/network-policy.yaml` | Egress is versioned policy edited by review (G9-class), never by skills. Platform allowlists (Arena sandbox, CI) must be synced to it — trial-001 evidence records the current gap. |
+| D11 | Per-run budget (discovery item 6) | Per-run envelope in `pilot/sandbox/budget-policy.yaml`: default 120k tokens / 4 USD notional / 30 min / 24 model calls (doc 01 §4.1 shape), plus heavy / CLM-emulation / model-trial envelopes. Hard stop **parks the run** (doc 05 circuit-breaker); notional USD pricing recorded even for subscription-metered Copilot models | One envelope aggregates all model calls, CLM re-sends and retries per run; per-skill ceilings (doc 02) bind in addition; cost ledger keeps doc 07 metrics provider-comparable. |
+| D12 | S1 graph-extraction & impact spike go/no-go (doc 12 §2) | **PASS — go** ([verdict](spikes/s1-graph-extraction.md)): FS-014 change flags exactly {HLD comp, ADR, unit, test evidence}, zero signed-node false positives on the fixture set | Nested node model + typed edges + impact_preview stand as designed (doc 10); no simplification re-spike. B3 may proceed after S3 per spike order. |
+
 Full question bank (50, grouped A–E): doc 01 §11.
