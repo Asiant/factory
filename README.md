@@ -22,3 +22,4 @@ and AI-leverage / delivery / quality reporting.
 | [docs/09-own-ui-and-system-components.md](docs/09-own-ui-and-system-components.md) | Own UI surfaces (Mission Map, Gate Inbox, Change Lens, Context Inspector) + own system components; walking-skeleton cut |
 | [docs/11-signoff-register.md](docs/11-signoff-register.md) | Blueprint sign-off register |
 | [docs/12-walking-skeleton-plan.md](docs/12-walking-skeleton-plan.md) | Walking skeleton plan: spikes S1–S3, build order B1–B9, pilot fixture, exit criteria |
+| [docs/12a-discovery-status.md](docs/12a-discovery-status.md) | Doc 12 §5 discovery checklist status: verified vs blocked-on-human items |
