@@ -6,7 +6,10 @@ LLD → code → verification → release, with typed agent contracts, human/AI 
 gates, a Context Language Model (CLM) context system, human takeover (AI-off),
 and AI-leverage / delivery / quality reporting.
 
-**Current cycle: blueprint + contracts only (no running code).**
+**Current cycle: walking-skeleton discovery + Phase-0 spikes (doc 12).** The
+blueprint and contracts below stand; pilot test-wiring and spike code live
+under [`pilot/`](pilot/) (sandbox policy, budgets, model trial, fixture) and
+[`spikes/`](spikes/) (throwaway spike code; verdicts in [`docs/spikes/`](docs/spikes/)).
 
 | Doc | Contents |
 |---|---|
@@ -23,3 +26,6 @@ and AI-leverage / delivery / quality reporting.
 | [docs/11-signoff-register.md](docs/11-signoff-register.md) | Blueprint sign-off register |
 | [docs/12-walking-skeleton-plan.md](docs/12-walking-skeleton-plan.md) | Walking skeleton plan: spikes S1–S3, build order B1–B9, pilot fixture, exit criteria |
 | [docs/12a-discovery-status.md](docs/12a-discovery-status.md) | Doc 12 §5 discovery checklist status: verified vs blocked-on-human items |
+| [docs/spikes/s1-graph-extraction.md](docs/spikes/s1-graph-extraction.md) | Spike S1 verdict (go): graph extraction + impact_preview pass criterion results |
+
+Pilot test-wiring (test setup, owner `@Asiant`): [`pilot/sandbox/`](pilot/sandbox/) (network policy + per-run budget), [`pilot/model-trial/`](pilot/model-trial/) (model-access trial harness + records), [`pilot/fixture/`](pilot/fixture/) (fallback mission fixture, full doc-04 templates).
