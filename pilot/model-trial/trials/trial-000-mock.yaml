@@ -2,9 +2,9 @@
 trial:
   id: trial-000
   runner: mock
-  ts_utc: '2026-10-18T06:44:06Z'
+  ts_utc: '2026-10-18T06:47:14Z'
   harness: pilot/model-trial/model_trial.py
-  harness_version: 1
+  harness_version: 2
   objective: 'First model trial: reachability + auth + one completion under the model_trial
     budget (discovery item 6)'
 credential:
@@ -25,7 +25,7 @@ budget:
 prompt: 'Reply with exactly: FACTORY-MODEL-TRIAL-OK'
 endpoints_requested:
 - copilot
-notes: Harness self-test after response-shape validation.
+notes: Harness self-test v2.
 attempts:
 - endpoint: mock
   op: mock chat
@@ -33,7 +33,7 @@ attempts:
   status: 200
   latency_ms: 1
   error: null
-  response_head: '{"mock": true, "usage": {"prompt_tokens": 12, "completion_tokens":
+  response_head: '{"mock": true, "choices": [{}], "usage": {"prompt_tokens": 12, "completion_tokens":
     4}}'
 usage:
   model: mock-model

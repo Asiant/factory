@@ -33,17 +33,17 @@ jobs:
       - name: Run model trial (probe, no secrets beyond github.token)
         env:
           FACTORY_MODEL_API_TOKEN: ${{ github.token }}
-          TRIAL_ID: trial-003
+          TRIAL_ID: trial-004
         run: >-
           python3 pilot/model-trial/model_trial.py
           --trial-id "$TRIAL_ID"
           --runner ci
           --endpoints copilot,models
-          --notes "GitHub-hosted runner probe: reachability + auth behaviour of the model endpoints under the model_trial envelope. trial-002 found an env-name mismatch (no Authorization header sent) and a stub 200 OK front door; this run sends the header and validates response shape."
+          --notes "GitHub-hosted runner probe: reachability + auth behaviour of the model endpoints under the model_trial envelope. trial-003: Copilot API reachable, rejects the Actions installation token (Copilot-Integration-Id must match the issuing GitHub App). This run tries both integration-id variants and classifies 400 auth-shape failures as auth_rejected."
       - name: Publish record as check run
         env:
           GH_TOKEN: ${{ github.token }}
-          TRIAL_ID: trial-003
+          TRIAL_ID: trial-004
         run: |
           python3 - <<'EOF'
           import json, os, pathlib, urllib.request
