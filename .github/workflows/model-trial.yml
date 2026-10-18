@@ -1,10 +1,13 @@
 # First model trial from a host that can reach the Copilot model endpoints
 # (discovery item 6; doc 12a alternative when the sandbox egress allowlist
 # does not include them yet). Runs the same harness as the sandbox trial and
-# uploads the redacted record as an artifact. No credentials are stored in the
-# repo: the probe uses the run-scoped GITHUB_TOKEN only, so an auth_rejected
-# verdict here is expected until the org secret store provides a
-# Copilot-capable key (FACTORY_MODEL_API_TOKEN).
+# publishes the redacted record twice:
+#   * workflow artifact (human download)
+#   * check run `model-trial` (retrievable via the REST API from sandboxes
+#     that cannot reach Actions blob storage — record contains no credentials)
+# No credentials are stored in the repo: the probe uses the run-scoped
+# GITHUB_TOKEN only, so an auth_rejected verdict here is expected until the
+# org secret store provides a Copilot-capable key (FACTORY_MODEL_API_TOKEN).
 name: model-trial
 
 on:
@@ -12,12 +15,13 @@ on:
   push:
     branches: ["arena/**"]
     paths:
-      - "pilot/model-trial/**"
+      - "pilot/model-trial/model_trial.py"
       - "pilot/sandbox/**"
       - ".github/workflows/model-trial.yml"
 
 permissions:
   contents: read
+  checks: write
 
 jobs:
   trial:
@@ -35,6 +39,37 @@ jobs:
           --runner ci
           --endpoints copilot,models
           --notes "GitHub-hosted runner probe: reachability + auth behaviour of the model endpoints under the model_trial envelope."
+      - name: Publish record as check run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, pathlib, urllib.request
+          record = pathlib.Path("pilot/model-trial/trials/trial-002-ci.yaml").read_text()
+          payload = {
+              "name": "model-trial",
+              "head_sha": os.environ["GITHUB_SHA"],
+              "status": "completed",
+              "conclusion": "neutral",
+              "output": {
+                  "title": "model trial record (redacted)",
+                  "summary": "First model trial probe record; contains no credentials.",
+                  "text": record,
+              },
+          }
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/check-runs",
+              data=json.dumps(payload).encode(),
+              headers={
+                  "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              },
+              method="POST",
+          )
+          with urllib.request.urlopen(req) as resp:
+              print("check run id:", json.load(resp)["id"])
+          EOF
       - uses: actions/upload-artifact@v4
         with:
           name: model-trial-record
